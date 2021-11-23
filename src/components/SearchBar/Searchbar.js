@@ -37,7 +37,7 @@ class Searchbar extends React.Component {
             className={s.SearchFormInput}
             type="text"
             autoomplete="off"
-            autofocus
+            autoFocus
             placeholder="Search images and photos"
             value={this.state.imageName}
             onChange={this.handleChange}
@@ -51,5 +51,5 @@ class Searchbar extends React.Component {
 export default Searchbar;
 
 Searchbar.propTypes = {
-  onSubmit: PropTypes.string,
+  onSubmit: PropTypes.func,
 };

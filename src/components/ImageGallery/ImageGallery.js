@@ -9,7 +9,7 @@ class ImageGallery extends React.Component {
   state = {
     mainURL: 'https://pixabay.com/api/',
     secondaryURL: '&image_type=photo&orientation=horizontal&per_page=12',
-    key: '23677072-ad1f1d27f5221362a9cf8bc21',
+    myKey: '23677072-ad1f1d27f5221362a9cf8bc21',
     imageList: [],
     query: '',
     page: 1,
@@ -25,23 +25,22 @@ class ImageGallery extends React.Component {
     const nextImage = this.props.imageName;
     if (prevImage !== nextImage) {
       this.setState({ status: 'pending' });
-      setTimeout(() => {
-        this.setState({ status: 'pending' });
-        const changedImageName = nextImage.split(' ').join('+');
-        this.setState({ query: changedImageName });
-        const { mainURL, secondaryURL, page, key } = this.state;
-        fetch(
-          `${mainURL}?key=${key}&q=${changedImageName}&${secondaryURL}&page=${page}`,
-        )
-          .then(res => res.json())
-          .then(imageList =>
-            this.setState(prev => ({
-              imageList: imageList.hits,
-              page: prev.page + 1,
-              status: 'resolved',
-            })),
-          );
-      }, 1000);
+
+      this.setState({ status: 'pending' });
+      const changedImageName = nextImage.split(' ').join('+');
+      this.setState({ query: changedImageName });
+      const { mainURL, secondaryURL, page, myKey } = this.state;
+      fetch(
+        `${mainURL}?key=${myKey}&q=${changedImageName}&${secondaryURL}&page=${page}`,
+      )
+        .then(res => res.json())
+        .then(imageList =>
+          this.setState(prev => ({
+            imageList: imageList.hits,
+            page: prev.page + 1,
+            status: 'resolved',
+          })),
+        );
     }
     console.log(this.state.imageList);
   }
@@ -49,9 +48,9 @@ class ImageGallery extends React.Component {
   loadMore = () => {
     this.setState(prev => ({ page: prev.page + 1 }));
 
-    const { mainURL, secondaryURL, query, page, key } = this.state;
+    const { mainURL, secondaryURL, query, page, myKey } = this.state;
 
-    fetch(`${mainURL}?q=${query}&page=${page}&key=${key}${secondaryURL}`)
+    fetch(`${mainURL}?q=${query}&page=${page}&key=${myKey}${secondaryURL}`)
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -77,24 +76,23 @@ class ImageGallery extends React.Component {
     this.setState({ modalImage: { img: img, alt: alt }, showModal: true });
   };
   render() {
+    const imageList = this.state.imageList.map(image => {
+      const { id, webformatURL, tags, largeImageURL } = image;
+      return (
+        <>
+          <ImageGalleryItem
+            key={id.toString()}
+            url={webformatURL}
+            alt={tags}
+            largeImageURL={largeImageURL}
+            onGetImg={this.setModalImg}
+          />
+        </>
+      );
+    });
     return (
       <>
-        <ul className={s.ImageGallery}>
-          {this.state.imageList.map(image => {
-            const { id, webformatURL, tags, largeImageURL } = image;
-            return (
-              <>
-                <ImageGalleryItem
-                  url={webformatURL}
-                  key={id}
-                  alt={tags}
-                  largeImageURL={largeImageURL}
-                  onGetImg={this.setModalImg}
-                />
-              </>
-            );
-          })}
-        </ul>
+        <ul className={s.ImageGallery}>{imageList}</ul>
         {this.state.imageList.length !== 0 && (
           <Button onClick={this.loadMore} />
         )}

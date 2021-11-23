@@ -2,7 +2,6 @@ import React from 'react';
 import s from './ImageGalleryItem.module.css';
 import PropTypes from 'prop-types';
 export default function ImageGalleryItem({
-  key,
   url,
   alt,
   onGetImg,
@@ -10,7 +9,6 @@ export default function ImageGalleryItem({
 }) {
   return (
     <li
-      key={key}
       className={s.ImageGalleryItem}
       onClick={() => {
         onGetImg(largeImageURL, alt);
@@ -27,7 +25,6 @@ export default function ImageGalleryItem({
 }
 
 ImageGalleryItem.propTypes = {
-  key: PropTypes.number,
   url: PropTypes.string,
   alt: PropTypes.string,
   onGetImg: PropTypes.func,
