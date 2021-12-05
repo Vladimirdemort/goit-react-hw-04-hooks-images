@@ -1,116 +1,127 @@
 import Button from 'components/Button/Button';
 import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
 import Modal from 'components/Modal/Modal';
+import Searchbar from 'components/SearchBar/Searchbar';
 import React from 'react';
 import Loader from 'react-loader-spinner';
+
+import { useState, useEffect } from 'react';
+
 import s from './ImageGallery.module.css';
 
-class ImageGallery extends React.Component {
-  state = {
-    mainURL: 'https://pixabay.com/api/',
-    secondaryURL: '&image_type=photo&orientation=horizontal&per_page=12',
-    myKey: '23677072-ad1f1d27f5221362a9cf8bc21',
-    imageList: [],
-    query: '',
-    page: 1,
-    status: 'idle',
-    error: null,
+const MY_KEY = '23677072-ad1f1d27f5221362a9cf8bc21';
 
-    showModal: false,
-    modalImage: '',
-  };
+function ImageGallery( ) {
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevImage = prevProps.imageName;
-    const nextImage = this.props.imageName;
-    if (prevImage !== nextImage) {
-      this.setState({ status: 'pending' });
+  const [imageList, setImageList] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('idle');
+  const [showModal, setShowModal] = useState(false);
+  const [modalImage, setModalImage] = useState('');
 
-      this.setState({ status: 'pending' });
-      const changedImageName = nextImage.split(' ').join('+');
-      this.setState({ query: changedImageName });
-      const { mainURL, secondaryURL, page, myKey } = this.state;
-      fetch(
-        `${mainURL}?key=${myKey}&q=${changedImageName}&${secondaryURL}&page=${page}`,
-      )
-        .then(res => res.json())
-        .then(imageList =>
-          this.setState(prev => ({
-            imageList: imageList.hits,
-            page: prev.page + 1,
-            status: 'resolved',
-          })),
-        );
+  useEffect(() => {
+    if (!query) {
+      return;
     }
-    console.log(this.state.imageList);
-  }
-
-  loadMore = () => {
-    this.setState(prev => ({ page: prev.page + 1 }));
-
-    const { mainURL, secondaryURL, query, page, myKey } = this.state;
-
-    fetch(`${mainURL}?q=${query}&page=${page}&key=${myKey}${secondaryURL}`)
-      .then(res => {
-        if (res.ok) {
-          return res.json();
-        }
-
-        return Promise.reject(new Error(` Can't find ${query}`));
-      })
-      .then(response =>
-        this.setState(prev => ({
-          imageList: [...prev.imageList, ...response.hits],
-          status: 'resolved',
-        })),
-      )
-      .catch(error => this.setState({ error }));
-  };
-
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-  };
-  setModalImg = (img, alt) => {
-    this.setState({ modalImage: { img: img, alt: alt }, showModal: true });
-  };
-  render() {
-    const imageList = this.state.imageList.map(image => {
-      const { id, webformatURL, tags, largeImageURL } = image;
-      return (
-        <>
-          <ImageGalleryItem
-            key={id.toString()}
-            url={webformatURL}
-            alt={tags}
-            largeImageURL={largeImageURL}
-            onGetImg={this.setModalImg}
-          />
-        </>
-      );
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
     });
+
+    setStatus('pending');
+
+    fetch(
+      `https://pixabay.com/api/?q=${query}&page=${page}&key=${MY_KEY}&image_type=photo&orientation=horizontal&per_page=12`,
+    )
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        return Promise.reject(new Error(`Can not find ${query}!`));
+      })
+      .then(response => {
+        setImageList(response.hits);
+        setPage(prev => prev + 1);
+        setStatus('resolved');
+      })
+      .catch(error => alert('Ой что-то пошло не так((('))
+      .finally(() => setStatus('resolved'));
+  }, [query]);
+
+  useEffect(() => {
+    window.addEventListener('click', e => {
+      if (e.target.nodeName === 'IMG') {
+        toggleModal();
+      }
+    });
+  });
+
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
+    fetch(
+      `https://pixabay.com/api/?q=${query}&page=${page}&key=${MY_KEY}&image_type=photo&orientation=horizontal&per_page=12`,
+    )
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        return Promise.reject(new Error(`Can not find ${query}!`));
+      })
+      .then(response => {
+        setImageList(prevState => [...prevState, ...response.hits]);
+        setStatus('resolved');
+      })
+      .catch(error => alert('Ой что-то пошло не так((('))
+      .finally(() => setStatus('resolved'));
+  };
+
+ 
+  const searchQuery = imageName => {
+    setQuery(imageName);
+    setPage(1);
+    setImageList([]);
+  };
+
+  const toggleModal = () => {
+    setShowModal(prev => !prev);
+  };
+  const setModalImg = (img, alt) => {
+    setModalImage({ img: img, alt: alt });
+  };
+
+  const imageListComponent = imageList.map(image => {
+    const { id, webformatURL, tags, largeImageURL } = image;
     return (
       <>
-        <ul className={s.ImageGallery}>{imageList}</ul>
-        {this.state.imageList.length !== 0 && (
-          <Button onClick={this.loadMore} />
-        )}
-        {this.state.status === 'pending' && (
-          <Loader
-            type="Puff"
-            color="#00BFFF"
-            height={100}
-            width={100}
-            timeout={3000}
-          />
-        )}
-        {this.state.showModal && (
-          <Modal onGetImg={this.state.modalImage} onClose={this.toggleModal} />
-        )}
+        
+        <ImageGalleryItem
+       key={id.toString()}
+          url={webformatURL}
+          alt={tags}
+          largeImageURL={largeImageURL}
+          onGetImg={setModalImg}
+        />
       </>
     );
-  }
+  });
+  return (
+    <>
+      <Searchbar onSubmit={searchQuery} />
+      <ul className={s.ImageGallery}>{imageListComponent}</ul>
+      {imageList.length !== 0 && <Button onClick={loadMore} />}
+      {status === 'pending' && (
+        <Loader
+          type="Puff"
+          color="#00BFFF"
+          height={100}
+          width={100}
+          timeout={3000}
+        />
+      )}
+      {showModal && <Modal onGetImg={modalImage} onClose={toggleModal} />}
+    </>
+  );
 }
 
 export default ImageGallery;
